@@ -14,7 +14,7 @@ A production-grade, autonomous LLM-powered system that compiles raw documents in
 ### 1. Install
 
 ```bash
-git clone https://github.com/yourname/wiki-forge
+git clone https://github.com/riteshgajera/wiki-forge.git
 cd wiki-forge
 pip install -e ".[dev]"
 cp .env.example .env          # edit LLM settings
