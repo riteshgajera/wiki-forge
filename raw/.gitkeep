@@ -1,0 +1,5 @@
+# This directory contains input documents for the wiki forge
+# Drop your documents here:
+# - PDFs: raw/papers/
+# - Markdown: raw/articles/
+# - Other formats as supported by the ingestion engine

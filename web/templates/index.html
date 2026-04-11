@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Wiki Forge{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:24px;font-size:22px;">Dashboard</h2>
+
+<div class="card">
+  <h3>Processing Status</h3>
+  <div class="stats-grid">
+    {% for status, count in stats.items() %}
+    <div class="stat-card {{ status }}">
+      <div class="num">{{ count }}</div>
+      <div class="label">{{ status }}</div>
+    </div>
+    {% endfor %}
+    <div class="stat-card">
+      <div class="num" style="color:var(--accent2)">{{ article_count }}</div>
+      <div class="label">wiki articles</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Quick Search</h3>
+  <form action="/search" method="get">
+    <div class="search-box">
+      <input type="text" name="q" placeholder="Search knowledge base…">
+      <button type="submit">Search</button>
+    </div>
+  </form>
+  <div style="font-size:12px;color:var(--text2);margin-top:4px">
+    Or use the <a href="/search">full search page</a> for advanced options.
+  </div>
+</div>
+
+<div class="card">
+  <h3>Recent Activity</h3>
+  {% if recent_log %}
+    {% for entry in recent_log %}
+    <div style="font-family:var(--mono);font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border)">{{ entry }}</div>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--text2);font-size:13px">No operations yet. Run <code>kb compile</code> to start.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Pipeline</h3>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="btn primary"
+            hx-post="/api/agents/compile"
+            hx-target="#compile-status"
+            hx-indicator="#compile-spinner">▶ Compile Now</button>
+    <a href="/run" class="btn">Full Pipeline Controls →</a>
+    <span id="compile-spinner" class="htmx-indicator" style="color:var(--text2);font-size:13px;line-height:36px">⏳ running…</span>
+  </div>
+  <div id="compile-status" style="font-size:13px;color:var(--text2)"></div>
+  <div style="font-size:12px;color:var(--text2);margin-top:8px">
+    LLM: <code>{{ settings_provider }}</code> &nbsp;|&nbsp;
+    Wiki: <code>{{ wiki_dir }}</code>
+  </div>
+</div>
+
+<script>
+document.body.addEventListener('htmx:afterRequest', function(e) {
+  if (e.detail.target.id === 'compile-status') {
+    try {
+      const d = JSON.parse(e.detail.xhr.responseText);
+      document.getElementById('compile-status').innerHTML =
+        d.job_id
+          ? '<span style="color:var(--yellow)">⏳ Job ' + d.job_id + ' started…</span>'
+          : JSON.stringify(d);
+    } catch(err) {}
+  }
+});
+</script>
+{% endblock %}

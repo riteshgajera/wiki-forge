@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}WIKI Forge{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0f1117; --bg2:#161b22; --bg3:#1c2128;
+      --border:#30363d; --text:#e6edf3; --text2:#8b949e;
+      --accent:#7c6af7; --accent2:#58a6ff; --green:#3fb950;
+      --yellow:#d29922; --red:#f85149;
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --mono:"SF Mono","Cascadia Code",Consolas,monospace;
+      --radius:8px;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-size:15px; line-height:1.6; }
+    a { color:var(--accent2); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { font-family:var(--mono); background:var(--bg3); padding:2px 6px; border-radius:4px; font-size:13px; color:#ff7b72; }
+    pre { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:16px; overflow-x:auto; margin:12px 0; }
+    pre code { background:none; padding:0; color:var(--text2); font-size:13px; }
+
+    .layout { display:grid; grid-template-columns:220px 1fr; min-height:100vh; }
+    .sidebar { background:var(--bg2); border-right:1px solid var(--border); padding:20px 0; position:sticky; top:0; height:100vh; overflow-y:auto; }
+    .sidebar-logo { padding:0 20px 20px; border-bottom:1px solid var(--border); }
+    .sidebar-logo h1 { font-size:18px; font-weight:600; color:var(--accent); }
+    .sidebar-logo span { font-size:11px; color:var(--text2); }
+    .sidebar-nav { padding:12px 0; }
+    .sidebar-nav a { display:flex; align-items:center; gap:8px; padding:8px 20px; color:var(--text2); font-size:14px; transition:all .15s; }
+    .sidebar-nav a:hover, .sidebar-nav a.active { color:var(--text); background:var(--bg3); text-decoration:none; }
+    .sidebar-nav a.active { border-left:3px solid var(--accent); }
+    .main { padding:32px; max-width:1000px; }
+
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+    .card h3 { font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
+
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
+    .stat-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:16px; text-align:center; }
+    .stat-card .num { font-size:32px; font-weight:700; }
+    .stat-card .label { font-size:12px; color:var(--text2); margin-top:4px; }
+    .stat-card.done .num { color:var(--green); }
+    .stat-card.pending .num, .stat-card.review .num { color:var(--yellow); }
+    .stat-card.failed .num { color:var(--red); }
+
+    .search-box { display:flex; gap:8px; margin-bottom:20px; }
+    .search-box input { flex:1; background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:10px 14px; border-radius:var(--radius); font-size:15px; outline:none; }
+    .search-box input:focus { border-color:var(--accent); }
+    .search-box button { background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:var(--radius); cursor:pointer; font-size:14px; font-weight:600; }
+    .search-box button:hover { opacity:.85; }
+
+    .article-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
+    .article-item:last-child { border-bottom:none; }
+    .article-item .title { font-weight:500; }
+    .article-item .meta { font-size:12px; color:var(--text2); }
+
+    .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+    .badge.concepts  { background:rgba(124,106,247,.2); color:var(--accent); }
+    .badge.entities  { background:rgba(63,185,80,.2); color:var(--green); }
+    .badge.summaries { background:rgba(88,166,255,.2); color:var(--accent2); }
+    .badge.analysis  { background:rgba(210,153,34,.2); color:var(--yellow); }
+    .badge._meta     { background:rgba(139,148,158,.2); color:var(--text2); }
+
+    .search-result { padding:14px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; }
+    .search-result .sr-title { font-weight:600; margin-bottom:4px; }
+    .search-result .sr-snippet { font-size:13px; color:var(--text2); margin-top:4px; }
+    .search-result .sr-score { font-size:11px; color:var(--text2); float:right; }
+
+    .article-body { line-height:1.8; }
+    .article-body h1 { font-size:28px; margin:0 0 16px; }
+    .article-body h2 { font-size:20px; margin:28px 0 12px; border-bottom:1px solid var(--border); padding-bottom:6px; }
+    .article-body h3 { font-size:16px; margin:20px 0 8px; color:var(--text2); }
+    .article-body h4 { font-size:14px; margin:16px 0 6px; color:var(--text2); }
+    .article-body p  { margin:0 0 14px; }
+    .article-body ul, .article-body ol { margin:0 0 14px 24px; }
+    .article-body li { margin-bottom:6px; }
+    .article-body blockquote { border-left:3px solid var(--border); padding-left:16px; color:var(--text2); margin:16px 0; font-style:italic; }
+    .article-body hr { border:none; border-top:1px solid var(--border); margin:24px 0; }
+    .article-body .wiki-table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; }
+    .article-body .wiki-table th { background:var(--bg3); padding:8px 12px; border:1px solid var(--border); text-align:left; font-weight:600; }
+    .article-body .wiki-table td { padding:8px 12px; border:1px solid var(--border); }
+    .article-body .wiki-table tr:nth-child(even) td { background:var(--bg3); }
+    .wikilink { color:var(--accent); background:rgba(124,106,247,.1); padding:1px 4px; border-radius:3px; }
+
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius); border:1px solid var(--border); background:var(--bg3); color:var(--text); cursor:pointer; font-size:14px; font-weight:500; transition:all .15s; }
+    .btn:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+    .btn.primary { background:var(--accent); color:white; border-color:var(--accent); }
+    .btn.primary:hover { opacity:.85; }
+
+    .htmx-indicator { opacity:0; transition:opacity .2s; }
+    .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity:1; }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Wiki Forge</h1>
+      <span>local-first knowledge base</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/"        {% if request.url.path == '/' %}class="active"{% endif %}>⬛ Dashboard</a>
+      <a href="/articles"{% if '/articles' in request.url.path %}class="active"{% endif %}>📄 Articles</a>
+      <a href="/search"  {% if request.url.path == '/search' %}class="active"{% endif %}>🔍 Search</a>
+      <a href="/run"     {% if request.url.path == '/run' %}class="active"{% endif %}>▶ Run Pipeline</a>
+      <a href="/health"  target="_blank">💚 Health</a>
+      <a href="/docs"    target="_blank">📘 API Docs</a>
+    </nav>
+  </aside>
+  <main class="main">{% block content %}{% endblock %}</main>
+</div>
+</body>
+</html>

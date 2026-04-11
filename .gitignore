@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Environment
+.env
+*.env.local
+
+# Runtime data (gitignored — generated at runtime)
+data/
+raw/*
+!raw/.gitkeep
+wiki/*
+!wiki/WIKI.md
+*.db
+*.db-shm
+*.db-wal
+*.bak
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Node (if web assets compiled)
+node_modules/

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search — Wiki Forge{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:24px;font-size:22px;">Search</h2>
+
+<form method="get" action="/search" style="margin-bottom:28px;">
+  <div class="search-box" style="margin:0">
+    <input type="text" name="q" value="{{ query }}"
+           placeholder="Search articles, concepts, entities..."
+           style="width:100%" autofocus>
+    <button type="submit">Search</button>
+  </div>
+</form>
+
+{% if query %}
+  {% if results %}
+    <div style="color:var(--text2);font-size:13px;margin-bottom:16px;">
+      {{ results|length }} result(s) for <strong>{{ query }}</strong>
+    </div>
+    {% for r in results %}
+    <div class="search-result">
+      <span class="sr-score">score: {{ r.score|int }}</span>
+      <div class="sr-title">
+        <a href="/articles/{{ r.subdir }}/{{ r.slug }}">{{ r.title }}</a>
+        <span class="badge {{ r.subdir }}" style="margin-left:8px">{{ r.subdir }}</span>
+      </div>
+      <div class="sr-snippet">{{ r.snippet[:200] }}{% if r.snippet|length > 200 %}…{% endif %}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:var(--text2);text-align:center;padding:60px 0">
+      <div style="font-size:32px;margin-bottom:12px">🔍</div>
+      <p>No results for <strong>{{ query }}</strong></p>
+      <p style="font-size:13px;margin-top:8px">Try different keywords or run <code>kb compile</code> to index more documents.</p>
+    </div>
+  {% endif %}
+{% else %}
+  <div style="color:var(--text2);text-align:center;padding:60px 0">
+    <div style="font-size:32px;margin-bottom:12px">🔍</div>
+    <p>Enter a query above to search the knowledge base.</p>
+    <p style="font-size:13px;margin-top:8px">
+      Tip: also try <code>kb query "your question" --generate</code> for an AI-synthesised answer.
+    </p>
+  </div>
+{% endif %}
+{% endblock %}

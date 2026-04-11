@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Run Pipeline — Wiki Forge{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:24px;font-size:22px;">Run Pipeline</h2>
+
+<div class="card">
+  <h3>Processing Status</h3>
+  <div class="stats-grid" style="margin-bottom:0">
+    {% for status, count in stats.items() %}
+    <div class="stat-card {{ status }}">
+      <div class="num">{{ count }}</div>
+      <div class="label">{{ status }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h3>Pipeline Actions</h3>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+    Raw sources: <code>{{ raw_dir }}</code> &nbsp;→&nbsp; Wiki: <code>{{ wiki_dir }}</code>
+  </p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <button class="btn primary" id="btn-compile"
+            hx-post="/api/agents/compile"
+            hx-target="#run-output"
+            hx-indicator="#run-spinner"
+            onclick="startPolling()">
+      ▶ Run Compile
+    </button>
+    <button class="btn" id="btn-force"
+            hx-post="/api/agents/compile?force=true"
+            hx-target="#run-output"
+            hx-indicator="#run-spinner"
+            onclick="startPolling()">
+      🔄 Force Recompile
+    </button>
+    <span id="run-spinner" class="htmx-indicator" style="color:var(--text2);font-size:13px;line-height:38px">
+      ⏳ Running…
+    </span>
+  </div>
+
+  <div id="run-output" style="font-size:13px;color:var(--text2)"></div>
+</div>
+
+<div class="card">
+  <h3>CLI Commands</h3>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Run these in your terminal for full control:</p>
+  <pre style="background:var(--bg3);padding:16px;border-radius:var(--radius);font-size:13px;overflow-x:auto"><code>kb ingest                    # scan /raw for new files
+kb compile                   # run full agent pipeline
+kb compile --guided          # one source at a time (interactive)
+kb query "your question"     # search + BM25 ranking
+kb query "..." --generate    # AI-synthesised answer
+kb query "..." --file        # file answer back to wiki
+kb lint                      # quality-check wiki articles
+kb status                    # show processing stats
+kb session                   # session context for LLM</code></pre>
+</div>
+
+<script>
+let jobId = null;
+let pollTimer = null;
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(checkStatus, 2000);
+}
+
+function checkStatus() {
+  if (!jobId) {
+    const out = document.getElementById('run-output');
+    if (out && out.textContent && out.textContent.includes('job_id')) {
+      try {
+        const data = JSON.parse(out.textContent);
+        jobId = data.job_id;
+      } catch(e) {}
+    }
+    return;
+  }
+  fetch('/api/agents/jobs/' + jobId)
+    .then(r => r.json())
+    .then(d => {
+      const out = document.getElementById('run-output');
+      if (d.status && d.status.startsWith('done')) {
+        clearInterval(pollTimer);
+        out.innerHTML = '<span style="color:var(--green)">✓ Complete. <a href="/">View dashboard</a></span>';
+        jobId = null;
+      } else if (d.status && d.status.startsWith('error')) {
+        clearInterval(pollTimer);
+        out.innerHTML = '<span style="color:var(--red)">✗ Error: ' + d.status + '</span>';
+        jobId = null;
+      }
+    });
+}
+
+document.body.addEventListener('htmx:afterRequest', function(e) {
+  try {
+    const data = JSON.parse(e.detail.xhr.responseText);
+    if (data.job_id) {
+      jobId = data.job_id;
+      document.getElementById('run-output').innerHTML =
+        '<span style="color:var(--yellow)">⏳ Job ' + data.job_id + ' running…</span>';
+    }
+  } catch(err) {}
+});
+</script>
+{% endblock %}

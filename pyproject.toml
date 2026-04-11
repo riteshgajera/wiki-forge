@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wiki-forge"
+version = "0.1.0"
+description = "Local-first multi-agent LLM knowledge base system"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0",
+    "requests>=2.31",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "structlog>=24.0",
+    "typer>=0.12",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "jinja2>=3.1",
+    "aiofiles>=23.0",
+    "aiosqlite>=0.20",
+    "faiss-cpu>=1.8",
+    "PyMuPDF>=1.24",
+    "Pillow>=10.0",
+    "python-dotenv>=1.0",
+    "PyYAML>=6.0",
+    "whoosh>=2.7",
+    "tiktoken>=0.7",
+    "numpy>=1.26",
+    "rich>=13.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "black>=24.0",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+kb = "cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kb*", "cli*", "web*", "config*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"

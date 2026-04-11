@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Articles — Wiki Forge{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <h2 style="font-size:22px;">Articles <span style="color:var(--text2);font-size:16px">({{ articles|length }})</span></h2>
+  <input type="text" placeholder="Filter…" oninput="filter(this.value)"
+         style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:13px;outline:none;width:200px">
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+  <a href="/articles" class="btn {% if not active_subdir %}primary{% endif %}" style="padding:6px 14px;font-size:13px">All</a>
+  {% for sd in subdirs %}
+  <a href="/articles?subdir={{ sd }}" class="btn {% if active_subdir == sd %}primary{% endif %}" style="padding:6px 14px;font-size:13px">{{ sd }}</a>
+  {% endfor %}
+</div>
+
+<div class="card" id="article-list">
+  {% if articles %}
+    {% for art in articles %}
+    <div class="article-item" data-title="{{ art.title|lower }}">
+      <div>
+        <div class="title">
+          <a href="/articles/{{ art.subdir }}/{{ art.slug }}">{{ art.title }}</a>
+        </div>
+        <div class="meta">
+          {{ art.subdir }}/{{ art.slug }}.md
+          {% for tag in art.tags %}<span style="margin-left:6px;font-size:11px;color:var(--text2)">#{{ tag }}</span>{% endfor %}
+        </div>
+      </div>
+      <span class="badge {{ art.subdir }}">{{ art.subdir }}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:var(--text2);text-align:center;padding:40px">
+      <div style="font-size:32px;margin-bottom:12px">📭</div>
+      <p>No articles yet.</p>
+      <p style="font-size:13px;margin-top:8px">Run <code>kb ingest</code> then <code>kb compile</code> to generate your wiki.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function filter(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.article-item').forEach(el => {
+    el.style.display = el.dataset.title.includes(lq) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}
