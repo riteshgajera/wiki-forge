@@ -4,8 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wiki-forge"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first multi-agent LLM knowledge base system"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "riteshgajera"}
+]
+maintainers = [
+    {name = "riteshgajera"}
+]
+keywords = ["llm", "knowledge-base", "ai", "wiki", "agents", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+]
 requires-python = ">=3.11"
 dependencies = [
     "openai>=1.0",
@@ -39,6 +61,14 @@ dev = [
     "ruff>=0.4",
     "black>=24.0",
     "mypy>=1.10",
+    "pre-commit>=3.0",
+    "safety>=3.0",
+    "bandit>=1.7",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
 ]
 
 [project.scripts]
@@ -66,3 +96,25 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+[project.urls]
+Homepage = "https://github.com/riteshgajera/wiki-forge"
+Repository = "https://github.com/riteshgajera/wiki-forge"
+Documentation = "https://github.com/riteshgajera/wiki-forge#readme"
+Issues = "https://github.com/riteshgajera/wiki-forge/issues"
+Changelog = "https://github.com/riteshgajera/wiki-forge/blob/main/CHANGELOG.md"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101", "B601"]
+
+[tool.coverage.run]
+source = ["kb"]
+omit = ["tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

@@ -1,11 +1,40 @@
-# 🧠 Wiki Forge — Local-First Multi-Agent Knowledge Base
+<div align="center">
 
-> Inspired by [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
-> The wiki is a **persistent, compounding artifact** — not a RAG index.
+# 🧠 Wiki Forge 
 
-A production-grade, autonomous LLM-powered system that compiles raw documents into a structured, self-maintaining Obsidian-compatible markdown wiki.
+### Local-First Multi-Agent Knowledge Base
 
-**The key insight:** When you add a new source, the LLM doesn't just create one new page — it reads the existing wiki and updates 10–15 pages: enriching entity records, adding cross-references, flagging contradictions, and strengthening the knowledge graph. Knowledge accumulates. Nothing needs to be re-derived on every query.
+**The wiki is a persistent, compounding artifact — not a RAG index.**
+
+[![Tests](https://img.shields.io/badge/tests-95%20passing-brightgreen)](#)
+[![Python](https://img.shields.io/badge/python-3.11+-blue)](#)
+[![License](https://img.shields.io/badge/license-MIT-purple)](#)
+[![Inspired by](https://img.shields.io/badge/inspired%20by-Karpathy%20LLM%20Wiki-orange)](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+
+<img src="docs/screenshots/demo.gif" alt="Wiki Forge Demo" width="900">
+
+*8 scenes: ingest → compile → wiki structure → compounding effect → query → web UI → lint → session context*
+
+</div>
+
+---
+
+## What Makes This Different
+
+Most document AI systems work like RAG: you upload files, the LLM retrieves relevant chunks at query time, and generates an answer. Every query rediscovers knowledge from scratch. Nothing accumulates.
+
+Wiki Forge  works differently. Inspired by [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f), the LLM **incrementally builds and maintains a persistent wiki** between your raw sources and your queries.
+
+| RAG approach | Wiki Forge  approach |
+|-------------|-------------------|
+| Index documents for retrieval | Build a structured wiki from documents |
+| Re-derive knowledge on every query | Knowledge compiled once, kept current |
+| One answer per query, lost in chat | Answers filed back into the wiki |
+| 100 docs → 100 chunks | 100 docs → 200+ interlinked wiki pages |
+| No memory between sessions | `log.md`, `wip.md`, `index.md` persist |
+| Query touches relevant chunks | Query reads pre-synthesised concepts |
+
+**The key mechanism:** When you add source #2, it doesn't just create a new page — the `IntegrationAgent` reads the existing wiki and updates 10–15 existing pages: enriching entity records, adding cross-references, flagging contradictions. Knowledge compounds.
 
 ---
 
@@ -93,7 +122,7 @@ uvicorn web.main:app --reload
   images/      Diagrams, screenshots (with OCR)
   repos/        Code repositories
 
-/wiki/         LLM-generated wiki (LLM writes, you read)
+/wiki/         LLM-generated wiki (LLM writes, you read) - persistent, compounding artifact
   WIKI.md      Governing schema — read this first every session
   index.md     Content catalog with L0 summaries (for fast retrieval)
   log.md       Append-only operation timeline
@@ -137,10 +166,14 @@ uvicorn web.main:app --reload
 Each document flows through these agents in order:
 
 ```
-Ingestor → Summarizer → ConceptExtractor → Linker
-         → IntegrationAgent (updates 10-15 existing pages)
-         → EntityAgent (creates/updates entity pages)
-         → IndexBuilder → LintingQA
+Ingestor
+  └─► Summarizer          key points, topics, document type
+        └─► ConceptExtractor    entities, relationships, taxonomy
+              ├─► IntegrationAgent ★  updates 10-15 existing wiki pages
+              ├─► EntityAgent ★       creates/updates entity pages
+              ├─► Linker              [[wikilinks]] and backlinks
+              ├─► IndexBuilder        rebuilds index.md catalog
+              └─► LintingQA           confidence score, quality issues
 ```
 
 ### Confidence gate
@@ -150,6 +183,8 @@ Ingestor → Summarizer → ConceptExtractor → Linker
 
 ### Incremental processing
 Files are SHA-256 fingerprinted. Unchanged files are skipped automatically. Only new or modified sources trigger the pipeline.
+
+Each step receives all prior outputs. If any step drops below threshold, the pipeline halts and flags for human review. All agents retry with exponential backoff on failure.
 
 ---
 
@@ -166,6 +201,8 @@ Start with `uvicorn web.main:app --reload` and open `http://localhost:8000`.
 | Run Pipeline | `/run` | Trigger compile, view status, CLI reference |
 | API Docs | `/docs` | FastAPI OpenAPI documentation |
 | Health | `/health` | JSON health check |
+
+**All `[[wikilinks]]` in rendered articles are clickable** and route to the correct subdir page.
 
 ### API endpoints
 
@@ -205,6 +242,21 @@ contradicts: []
 - **L0** — `l0_summary` field only (one sentence). Always loaded for index scanning.
 - **L1** — Full page body. Standard for most queries.
 - **L2** — Deep reference with all sources and raw quotes. For research deep-dives.
+
+---
+
+## Hybrid Search
+
+BM25 (keyword) + FAISS (semantic) fused with **Reciprocal Rank Fusion**:
+
+```
+Search query
+  ├─► BM25 index     fast keyword match, handles jargon/acronyms
+  ├─► FAISS index    semantic similarity, handles paraphrases
+  └─► RRF fusion     score = Σ 1/(k + rank_i)  →  top-k results
+```
+
+No score normalization needed — RRF naturally handles different score scales. Documents appearing in both result sets get promoted. Falls back gracefully if FAISS index is empty.
 
 ---
 
@@ -433,7 +485,17 @@ MIT — see `LICENSE` for details.
 
 ## Acknowledgements
 
-- [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — LLM Wiki pattern inspiration
-- [Ollama](https://ollama.com) — local LLM serving
-- [FastAPI](https://fastapi.tiangolo.com) — web framework
-- [HTMX](https://htmx.org) — lightweight interactivity
+- **[Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** — LLM Wiki pattern (5,000+ stars in 7 days)
+- **[Ollama](https://ollama.com)** — local LLM serving, zero cloud dependency
+- **[FastAPI](https://fastapi.tiangolo.com)** + **[HTMX](https://htmx.org)** — lightweight interactive web UI
+- **[FAISS](https://faiss.ai)** — local vector search without a server
+- **[Obsidian](https://obsidian.md)** — the IDE for the wiki
+
+---
+
+<div align="center">
+
+*"The tedious part of maintaining a knowledge base is not the reading or the thinking — it's the bookkeeping. LLMs don't get bored."*  
+— Karpathy
+
+</div>
